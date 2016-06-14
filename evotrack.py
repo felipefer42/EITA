@@ -141,13 +141,73 @@ class Evo_Track(object):
 
         return evotrack
 
-if 1: # Testing age interpolation
+    def phase_duration(self, phase):
+        phase_list = list(self.phase.astype('int'))
 
+        try:
+            phase_start = phase_list.index(phase)
+        except ValueError:
+            return 0.0
+
+        phase_end = (len(phase_list) - 1) - phase_list[::-1].index(phase)
+        
+        if phase_end != (len(phase_list) - 1):
+
+            # the +1 ensures that the final age of a phase is defined as the first age of the next phase
+            return (self.age[phase_end+1] - self.age[phase_start])
+
+        else:
+            # here there is no +1 because this is the final phase
+            return (self.age[phase_end] - self.age[phase_start])
+
+
+    def ageinterval(self, age0, agef, N_phase = 1000):
+
+        phase_list = list(self.phase.astype('int'))
+        ages = np.array([])
+
+        for phase in range(1, 16):
+            try:
+                phase_start = phase_list.index(phase)
+            except ValueError:
+                continue
+
+            print phase
+
+            phase_end = (len(phase_list)) - phase_list[::-1].index(phase)
+            if phase_end == (len(phase_list)): 
+                phase_end = phase_end - 1
+
+            if age0 < self.age[phase_end]:
+                if agef >= self.age[phase_end]:
+                    ages = np.concatenate((ages, np.linspace(age0, self.age[phase_end], N_phase)))
+                    age0 = self.age[phase_end]
+                else:
+                    ages = np.concatenate((ages, np.linspace(age0, agef, N_phase)))
+                    break
+            else:
+                continue          
+
+        return ages
+
+
+if 0: # Testing phase duration
     teste = Evo_Track(Z = 0.0001, M = 1, path = '/home/felipe/MEGA/Isocpy/Evolutionary_Tracks')
-    ages = np.arange(0.01e9, 5.5e9, 0.001e9)
+    for i in range(1, 15):
+        print teste.phase_duration(i)
+
+if 0: # Testing age interval
+    teste = Evo_Track(Z = 0.0001, M = 1, path = '/home/felipe/MEGA/Isocpy/Evolutionary_Tracks')
+    print teste.ageinterval(age0 = 1000000, agef = 5000000000, N_phase = 20)
+
+if 1: # Testing age interpolation
+    teste = Evo_Track(Z = 0.0001, M = 1, path = '/home/felipe/MEGA/Isocpy/Evolutionary_Tracks')
+    ages = teste.ageinterval(age0 = 1000000, agef = 4000000000, N_phase = 10000)
 
     teste_interp = teste.interp(age = ages)
     plt.plot(teste.logTe, teste.logL, 'r')
     plt.plot(teste_interp.logTe, teste_interp.logL, 'b')
     plt.xlim(max(teste.logTe), min(teste.logTe))
     plt.show()
+
+
